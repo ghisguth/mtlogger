@@ -58,7 +58,7 @@ struct MessageLogger
 				time(&timestamp);
 				localtime_r(&timestamp, &lts);
 
-				int offset = snprintf(buffer, (*log_buffer).size(), "[%02d.%02d.%04d %02d:%02d:%02d][%s] - [%c] ",
+				int offset = snprintf(buffer, (*log_buffer).size(), "%02d.%02d.%04d %02d:%02d:%02d [%14s] - <%c> ",
 									lts.tm_mday, lts.tm_mon + 1, 1900+lts.tm_year, lts.tm_hour, lts.tm_min, lts.tm_sec,
 									(*thread_id).c_str(), symbol);
 				if((size_t)offset >= (*log_buffer).size())
@@ -118,10 +118,14 @@ struct MessageSteamLogger
 				time(&timestamp);
 				localtime_r(&timestamp, &lts);
 
-				*log_stream << "["<<std::setfill('0')<<std::setw(2)<<lts.tm_mday
-					<<"."<<lts.tm_mon+1<<"."<<1900+lts.tm_year<<" "
-					<<" "<<lts.tm_hour<<":"<<lts.tm_min<<":"<<lts.tm_sec
-					<<"]["<<*thread_id<<"] - ["<<symbol<<"] ";
+				*log_stream<<std::setfill('0')<<std::setw(2)<<lts.tm_mday
+					<<"."<<std::setfill('0')<<std::setw(2)<<lts.tm_mon+1
+					<<"."<<std::setfill('0')<<std::setw(4)<<1900+lts.tm_year
+					<<" "<<std::setfill('0')<<std::setw(2)<<lts.tm_hour
+					<<":"<<std::setfill('0')<<std::setw(2)<<lts.tm_min
+					<<":"<<std::setfill('0')<<std::setw(2)<<lts.tm_sec
+					<<" ["<<std::setfill(' ')<<std::setw(14)<<*thread_id
+					<<"] - <"<<symbol<<"> ";
 
 				log_stream->clear();
 				return log_stream.get();
