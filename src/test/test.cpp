@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 		*it = boost::thread(boost::bind(&LogThreadFunc, &barrier, ++i));
 	}
 	std::for_each(threads.begin(), threads.end(), boost::bind(&boost::thread::join, _1));
+	LOGSDBG("Stream logging example "<<NUM_THREADS<<" "<<NUM_IT);
 	LOGLEVEL(logger::SeverityVerbose);
 	LOGREOPEN();
 	LOGNOTICE("Exit...");

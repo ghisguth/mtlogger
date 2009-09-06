@@ -8,6 +8,7 @@
 
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <boost/scoped_ptr.hpp>
@@ -36,6 +37,7 @@ public:
 	typedef boost::array<char, 4096> LogBuffer;
 	typedef boost::thread_specific_ptr<LogBuffer> LogBufferTSPtr;
 	typedef boost::thread_specific_ptr<std::string> LogThreadIDTSPtr;
+	typedef boost::thread_specific_ptr<std::stringstream> LogStreamTSPtr;
 	typedef std::list<std::string> StringList;
 
 	static Logger* GetInstance()
@@ -45,6 +47,7 @@ public:
 	}
 
 	LogBufferTSPtr & GetBuffer() { return log_buffer_; }
+	LogStreamTSPtr & GetStream() { return log_stream_; }
 	LogThreadIDTSPtr & GetThreadID() { return log_thread_id_; }
 
 	bool IsInitialized() const { return initialized_; }
@@ -77,6 +80,19 @@ public:
 		}
 	}
 
+	void AddMessage(const std::stringstream & buffer)
+	{
+		if(initialized_)
+		{
+			{
+				boost::unique_lock<boost::mutex> lock(sync_);
+				string_list_.push_back(buffer.str());
+				++messages_added_;
+			}
+			WakeUp();
+		}
+	}
+
 	void Flush()
 	{
 		size_t currently_added = 0;
@@ -91,7 +107,7 @@ public:
 		while(need_continue)
 		{
 			boost::unique_lock<boost::mutex> lock(sync_);
-			flush_condition_.timed_wait(lock, boost::get_system_time() + boost::posix_time::milliseconds(100));
+			flush_condition_.timed_wait(lock, boost::get_system_time() + boost::posix_time::milliseconds(10));
 			// stop on counter overlap
 			need_continue = currently_added > messages_processed_ &&
 				currently_added <= messages_processed_;
@@ -115,7 +131,7 @@ public:
 				boost::unique_lock<boost::mutex> lock(sync_);
 				need_continue = !string_list_.empty();
 			}
-			boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+			boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 		}
 		shutdown_ = true;
 		WakeUp();
@@ -230,6 +246,7 @@ private:
 	int log_level_;
 	std::string filename_;
 	LogBufferTSPtr log_buffer_;
+	LogStreamTSPtr log_stream_;
 	LogThreadIDTSPtr log_thread_id_;
 	boost::thread logger_thread_;
 	boost::shared_ptr<std::ostream> output_;

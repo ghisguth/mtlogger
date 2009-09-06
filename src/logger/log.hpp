@@ -90,6 +90,64 @@ struct MessageLogger
 		}
 	}
 };
+
+template<Severity level, char symbol>
+struct MessageSteamLogger
+{
+	static std::stringstream * GetStream()
+	{
+		if((int)level>=Logger::GetInstance()->GetLogLevel())
+		{
+			if(Logger::GetInstance()->IsInitialized())
+			{
+				Logger::LogStreamTSPtr & log_stream = Logger::GetInstance()->GetStream();
+				if(!log_stream.get())
+				{
+					log_stream.reset(new std::stringstream);
+				}
+				Logger::LogThreadIDTSPtr & thread_id = Logger::GetInstance()->GetThreadID();
+				if(!thread_id.get())
+				{
+					thread_id.reset(new std::string(
+							boost::lexical_cast<std::string>(boost::this_thread::get_id()))
+						);
+				}
+
+				time_t timestamp;
+				struct tm lts;
+				time(&timestamp);
+				localtime_r(&timestamp, &lts);
+
+				*log_stream << "["<<std::setfill('0')<<std::setw(2)<<lts.tm_mday
+					<<"."<<lts.tm_mon+1<<"."<<1900+lts.tm_year<<" "
+					<<" "<<lts.tm_hour<<":"<<lts.tm_min<<":"<<lts.tm_sec
+					<<"]["<<*thread_id<<"] - ["<<symbol<<"] ";
+
+				log_stream->clear();
+				return log_stream.get();
+			}
+		}
+		return 0;
+	}
+
+	static void Send(std::stringstream * stream)
+	{
+		if(stream && (int)level>=Logger::GetInstance()->GetLogLevel() && Logger::GetInstance()->IsInitialized())
+		{
+			*stream << "\n";
+
+			if(level == SeverityFatalError){
+				std::cerr<<(*stream).str();
+			}
+			Logger::GetInstance()->AddMessage(*stream);
+			if(level == SeverityFatalError){
+				Logger::GetInstance()->Flush();
+			}
+			stream->str("");
+			stream->clear();
+		}
+	}
+};
 } // namespace logger
 
 #define LOGINIT logger::Logger::GetInstance()->Initialize
@@ -131,6 +189,84 @@ struct MessageLogger
 	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityFatalError) \
 	{ \
 		logger::MessageLogger<logger::SeverityFatalError, '#'>::Log(msg); \
+	}
+
+#define LOGSDBG(msg) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityDebug) \
+	{ \
+		typedef logger::MessageSteamLogger<logger::SeverityDebug, '*'> L; \
+		std::stringstream * stream(L::GetStream()); \
+		if(stream) \
+		{ \
+			*stream << msg; \
+			L::Send(stream); \
+		} \
+	}
+#define LOGSVERB(msg) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityVerbose) \
+	{ \
+		typedef logger::MessageSteamLogger<logger::SeverityVerbose, '.'> L; \
+		std::stringstream * stream(L::GetStream()); \
+		if(stream) \
+		{ \
+			*stream << msg; \
+			L::Send(stream); \
+		} \
+	}
+#define LOGS(msg) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityInfo) \
+	{ \
+		typedef logger::MessageSteamLogger<logger::SeverityInfo, ' '> L; \
+		std::stringstream * stream(L::GetStream()); \
+		if(stream) \
+		{ \
+			*stream << msg; \
+			L::Send(stream); \
+		} \
+	}
+#define LOGSNOTICE(msg) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityNotice) \
+	{ \
+		typedef logger::MessageSteamLogger<logger::SeverityNotice, '?'> L; \
+		std::stringstream * stream(L::GetStream()); \
+		if(stream) \
+		{ \
+			*stream << msg; \
+			L::Send(stream); \
+		} \
+	}
+#define LOGSWARN(msg) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityWarning) \
+	{ \
+		typedef logger::MessageSteamLogger<logger::SeverityWarning, '$'> L; \
+		std::stringstream * stream(L::GetStream()); \
+		if(stream) \
+		{ \
+			*stream << msg; \
+			L::Send(stream); \
+		} \
+	}
+#define LOGSERROR(msg) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityError) \
+	{ \
+		typedef logger::MessageSteamLogger<logger::SeverityError, '!'> L; \
+		std::stringstream * stream(L::GetStream()); \
+		if(stream) \
+		{ \
+			*stream << msg; \
+			L::Send(stream); \
+		} \
+	}
+#define LOGSFATAL(msg) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityFatalError) \
+	{ \
+		typedef logger::MessageSteamLogger<logger::SeverityFatalError, '#'> L; \
+		std::stringstream * stream(L::GetStream()); \
+		if(stream) \
+		{ \
+			*stream << msg; \
+			L::Send(stream); \
+		} \
 	}
 
 #endif /*LOGGER_LOG_H_*/
