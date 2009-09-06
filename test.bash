@@ -6,7 +6,7 @@ echo "log file = $log_file"
 
 num_line=`cat $log_file | wc -l`
 
-if [ $num_line != 65537 ]; then
+if [ $num_line != 65538 ]; then
 	echo "wrong line number ($num_line)" 1>&2
 	exit 1
 fi
