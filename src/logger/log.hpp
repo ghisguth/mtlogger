@@ -18,77 +18,77 @@ namespace logger
 {
 enum Severity
 {
-  SeverityDebug = 0,
-  SeverityVerbose,
-  SeverityInfo,
-  SeverityNotice,
-  SeverityWarning,
-  SeverityError,
-  SeverityFatalError,
+	SeverityDebug = 0,
+	SeverityVerbose,
+	SeverityInfo,
+	SeverityNotice,
+	SeverityWarning,
+	SeverityError,
+	SeverityFatalError,
 };
 
 template<Severity level, char symbol>
 struct MessageLogger
 {
-  static void Log(const char * message, ...)
+	static void Log(const char * message, ...)
 #if defined(__GNUC__)
-    __attribute__ ((__format__ (__printf__, 1, 2)))
+		__attribute__ ((__format__ (__printf__, 1, 2)))
 #endif
-  {
-    if((int)level>=Logger::GetInstance()->GetLogLevel())
-    {
-      if(Logger::GetInstance()->IsInitialized())
-      {
-        Logger::LogBufferTSPtr & log_buffer = Logger::GetInstance()->GetBuffer();
-        if(!log_buffer.get())
-        {
-          log_buffer.reset(new Logger::LogBuffer);
-        }
-        Logger::LogThreadIDTSPtr & thread_id = Logger::GetInstance()->GetThreadID();
-        if(!thread_id.get())
-        {
-          thread_id.reset(new std::string(
-              boost::lexical_cast<std::string>(boost::this_thread::get_id()))
-            );
-        }
+	{
+		if((int)level>=Logger::GetInstance()->GetLogLevel())
+		{
+			if(Logger::GetInstance()->IsInitialized())
+			{
+				Logger::LogBufferTSPtr & log_buffer = Logger::GetInstance()->GetBuffer();
+				if(!log_buffer.get())
+				{
+					log_buffer.reset(new Logger::LogBuffer);
+				}
+				Logger::LogThreadIDTSPtr & thread_id = Logger::GetInstance()->GetThreadID();
+				if(!thread_id.get())
+				{
+					thread_id.reset(new std::string(
+							boost::lexical_cast<std::string>(boost::this_thread::get_id()))
+						);
+				}
 
-        char * buffer = &(*log_buffer)[0];
-        time_t timestamp;
-        struct tm lts;
-        time(&timestamp);
-        localtime_r(&timestamp, &lts);
+				char * buffer = &(*log_buffer)[0];
+				time_t timestamp;
+				struct tm lts;
+				time(&timestamp);
+				localtime_r(&timestamp, &lts);
 
-        int offset = snprintf(buffer, (*log_buffer).size(), "[%02d.%02d.%04d %02d:%02d:%02d][%s] - [%c] ",
-                  lts.tm_mday, lts.tm_mon + 1, 1900+lts.tm_year, lts.tm_hour, lts.tm_min, lts.tm_sec,
-                  (*thread_id).c_str(), symbol);
-        if((size_t)offset >= (*log_buffer).size())
-          return;
+				int offset = snprintf(buffer, (*log_buffer).size(), "[%02d.%02d.%04d %02d:%02d:%02d][%s] - [%c] ",
+									lts.tm_mday, lts.tm_mon + 1, 1900+lts.tm_year, lts.tm_hour, lts.tm_min, lts.tm_sec,
+									(*thread_id).c_str(), symbol);
+				if((size_t)offset >= (*log_buffer).size())
+					return;
 
-        va_list args;
-        va_start(args, message);
-        offset += vsnprintf(buffer + offset, (*log_buffer).size() - offset, message, args);
-        va_end(args);
+				va_list args;
+				va_start(args, message);
+				offset += vsnprintf(buffer + offset, (*log_buffer).size() - offset, message, args);
+				va_end(args);
 
 
-        if((size_t)offset + 2 >= (*log_buffer).size())
-        {
-          offset = (*log_buffer).size() - 2 - 3;
-          buffer[offset++] = '.';
-          buffer[offset++] = '.';
-          buffer[offset++] = '.';
-        }
-        buffer[offset++] = '\n';
+				if((size_t)offset + 2 >= (*log_buffer).size())
+				{
+					offset = (*log_buffer).size() - 2 - 3;
+					buffer[offset++] = '.';
+					buffer[offset++] = '.';
+					buffer[offset++] = '.';
+				}
+				buffer[offset++] = '\n';
 
-        if(level == SeverityFatalError){
-          std::cerr << std::string(buffer, buffer + offset);
-        }
-        Logger::GetInstance()->AddMessage(*log_buffer, (size_t)offset);
-        if(level == SeverityFatalError){
-          Logger::GetInstance()->Flush();
-        }
-      }
-    }
-  }
+				if(level == SeverityFatalError){
+					std::cerr << std::string(buffer, buffer + offset);
+				}
+				Logger::GetInstance()->AddMessage(*log_buffer, (size_t)offset);
+				if(level == SeverityFatalError){
+					Logger::GetInstance()->Flush();
+				}
+			}
+		}
+	}
 };
 } // namespace logger
 
