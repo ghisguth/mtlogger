@@ -97,13 +97,40 @@ struct MessageLogger
 #define LOGREOPEN logger::Logger::GetInstance()->Reopen
 #define LOGLEVEL logger::Logger::GetInstance()->SetLogLevel
 
-#define LOGDBG logger::MessageLogger<logger::SeverityDebug, '*'>::Log
-#define LOGVERB logger::MessageLogger<logger::SeverityVerbose, '.'>::Log
-#define LOG logger::MessageLogger<logger::SeverityInfo, ' '>::Log
-#define LOGNOTICE logger::MessageLogger<logger::SeverityNotice, '?'>::Log
-#define LOGWARN logger::MessageLogger<logger::SeverityWarning, '$'>::Log
-#define LOGERR logger::MessageLogger<logger::SeverityError, '!'>::Log
-#define LOGFATAL logger::MessageLogger<logger::SeverityFatalError, '#'>::Log
-
+#define LOGDBG(msg...) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityDebug) \
+	{ \
+		logger::MessageLogger<logger::SeverityDebug, '*'>::Log(msg); \
+	}
+#define LOGVERB(msg...) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityVerbose) \
+	{ \
+		logger::MessageLogger<logger::SeverityVerbose, '.'>::Log(msg); \
+	}
+#define LOG(msg...) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityInfo) \
+	{ \
+		logger::MessageLogger<logger::SeverityInfo, ' '>::Log(msg); \
+	}
+#define LOGNOTICE(msg...) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityNotice) \
+	{ \
+		logger::MessageLogger<logger::SeverityNotice, '?'>::Log(msg); \
+	}
+#define LOGWARN(msg...) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityWarning) \
+	{ \
+		logger::MessageLogger<logger::SeverityWarning, '$'>::Log(msg); \
+	}
+#define LOGERR(msg...) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityError) \
+	{ \
+		logger::MessageLogger<logger::SeverityError, '!'>::Log(msg); \
+	}
+#define LOGFATAL(msg...) \
+	if(logger::Logger::GetInstance()->GetLogLevel() <= logger::SeverityFatalError) \
+	{ \
+		logger::MessageLogger<logger::SeverityFatalError, '#'>::Log(msg); \
+	}
 
 #endif /*LOGGER_LOG_H_*/
